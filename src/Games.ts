@@ -35,9 +35,11 @@ export function useGame(gameId: string, name: string): Game {
   };
 }
 
-export async function createGame(): Promise<string> {
-  const { id } = Games.doc();
-  return id;
+export async function createGame(player: string): Promise<string> {
+  const game = await Games.add({
+    players: [player],
+  });
+  return game.id;
 }
 
 export function subscribeToGame(gameId: string, handle: (data: Game) => void) {

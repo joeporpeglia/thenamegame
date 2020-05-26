@@ -1,4 +1,10 @@
-import React, { useState, Suspense, useMemo, useEffect } from "react";
+import React, {
+  useState,
+  Suspense,
+  useMemo,
+  useEffect,
+  useCallback,
+} from "react";
 import {
   createGame,
   useGame,
@@ -12,7 +18,9 @@ const savedName = localStorage.getItem("@thenamegame/saved-name");
 
 export default function App() {
   const [name, setName] = useState(savedName || "");
-  const { pathname } = useUrl();
+  const [url, dispatchUrl] = useUrl();
+  const { pathname } = url;
+
   const gameId = useMemo(() => {
     if (pathname.length > 0 && pathname !== "/") {
       return pathname.replace("/", "");
@@ -27,8 +35,8 @@ export default function App() {
   }
 
   async function handleCreateGame() {
-    const gameId = await createGame();
-    window.history.pushState(null, "", "/" + gameId);
+    const gameId = await createGame(name);
+    dispatchUrl("/" + gameId);
   }
 
   if (!name) {
@@ -165,13 +173,20 @@ function PlayerDetails(props: {
 function useUrl() {
   const [url, setUrl] = useState(new URL(window.location.href));
 
+  function handleUrlChange() {
+    console.log("history change");
+    setUrl(new URL(window.location.href));
+  }
+
   useEffect(() => {
-    function handlePopState() {
-      setUrl(new URL(window.location.href));
-    }
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    window.addEventListener("popstate", handleUrlChange);
+    return () => window.removeEventListener("popstate", handleUrlChange);
   }, []);
 
-  return url;
+  const handleSetUrl = useCallback((href: string) => {
+    window.history.pushState(null, "", href);
+    handleUrlChange();
+  }, []);
+
+  return [url, handleSetUrl] as const;
 }
